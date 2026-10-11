@@ -44,7 +44,7 @@ input{background:#0006;color:#fff;border:2px solid #fff6;border-radius:12px;padd
 <script src="config.js"></script>
 <script>
 const LV={Easy:4,Medium:6,Hard:8,Pro:9},RP=['🪨','📄','✂️'],$=s=>document.querySelector(s),app=$('#app');
-let db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:''},q=Promise.resolve(),sent={};
+let db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:'',gt:0,at:0},q=Promise.resolve(),sent={};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=i=>esc(H.names[i]);
 const cw=f=>{q=q.then(f).catch(e=>console.error(e))},pref=i=>db.doc(`g/${code}/pl/${i}`);
 const sh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -53,6 +53,7 @@ const beep=(f=660,d=.12)=>{try{const a=new(window.AudioContext||window.webkitAud
 function burst(){for(let i=0;i<40;i++){const e=document.createElement('i');e.className='cf';e.textContent=['🎉','✨','🎊','⭐'][i%4];e.style.cssText=`left:${Math.random()*100}vw;animation-delay:${Math.random()}s;font-size:${16+Math.random()*20}px`;document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(h){clearInterval(tm);app.innerHTML=h;app.style.setProperty('--cw',{4:68,6:54,8:44,9:40}[LV[H?H.lvl:cfg.lvl]]+'px')}
 function timer(s,cb){let t=s;const e=$('#t');e.textContent=t;tm=setInterval(()=>{t--;e.textContent=t;e.classList.toggle('lo',t<=5);if(t<=5&&t>0)beep(880,.05);if(t<=0){clearInterval(tm);cb()}},1000)}
+const lim=(s,cb)=>{if(s)timer(s,cb);else{const e=$('#t');if(e){e.textContent='∞';e.style.background='#6b7280'}}};
 const label=()=>H.tb?'⚡ TIE BREAKER':`Round ${H.round}/${H.rounds}`;
 const hdr=t=>`<div class="top"><span>${label()}</span><span>${nm(0)} ${H.scores[0]} – ${H.scores[1]} ${nm(1)}</span>${t?'<span class="timer" id="t"></span>':''}</div>`;
 const LEG='<p class="legend">🟢 right number, right spot • 🟡 in opponent’s set, wrong spot • faded = not in set</p>';
@@ -66,20 +67,24 @@ const BK='<button class="btn" id="bk" style="margin:8px auto">← Back</button>'
 function createScreen(msg=''){show(`<h1 class="glow">🎮 Create a game</h1><div class="panel"><input id="nm" placeholder="Your name" value="${esc(cfg.name)}" maxlength="12">
 <p class="mu">Level</p><div class="row">${Object.keys(LV).map(k=>`<button class="btn ${k==cfg.lvl?'on':''}" data-l="${k}">${k}<small>${LV[k]} numbers</small></button>`).join('')}</div>
 <p class="mu">Rounds</p><div class="row">${[1,3,5,7].map(r=>`<button class="btn ${r==cfg.rounds?'on':''}" data-r="${r}">${r}</button>`).join('')}</div>
+<p class="mu">⏱ Time to guess (per turn)</p><div class="row">${[[0,'No limit'],[15,'15s'],[30,'30s'],[60,'60s']].map(([v,l])=>`<button class="btn ${v==cfg.gt?'on':''}" data-g="${v}">${l}</button>`).join('')}</div>
+<p class="mu">⏱ Time to arrange numbers</p><div class="row">${[[0,'No limit'],[20,'20s'],[45,'45s'],[90,'90s']].map(([v,l])=>`<button class="btn ${v==cfg.at?'on':''}" data-a="${v}">${l}</button>`).join('')}</div>
 <button class="btn go" id="cr">Create &amp; get PIN</button></div><div class="err" id="er">${msg}</div>${BK}`);
  const nmv=()=>(cfg.name=$('#nm').value.trim()||'Player');
  app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{nmv();cfg.lvl=b.dataset.l;createScreen()});
  app.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{nmv();cfg.rounds=+b.dataset.r;createScreen()});
+ app.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{nmv();cfg.gt=+b.dataset.g;createScreen()});
+ app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{nmv();cfg.at=+b.dataset.a;createScreen()});
  $('#cr').onclick=()=>create(nmv());$('#bk').onclick=()=>home()}
 function joinScreen(msg=''){show(`<h1 class="glow">🔑 Join a game</h1><div class="panel"><input id="nm" placeholder="Your name" value="${esc(cfg.name)}" maxlength="12"><br><br>
 <input id="cd" placeholder="Game PIN" inputmode="numeric" maxlength="4" style="font-size:1.6rem;letter-spacing:.3em"><br><button class="btn go" id="jn">Join</button></div><div class="err" id="er">${msg}</div>${BK}`);
  $('#jn').onclick=()=>{cfg.name=$('#nm').value.trim()||'Player';join(cfg.name,$('#cd').value.trim())};$('#bk').onclick=()=>home()}
 function wait(msg,hist=false){show(`${hdr(false)}<div class="panel"><div class="spin">⏳</div><h2>${msg}</h2></div>${hist?`<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>${LEG}`:''}`)}
-function lobby(){show(`<h1 class="glow">Waiting for opponent…</h1><div class="panel"><p>On your friend’s device open this same page, tap <b>Join a game</b> and enter this PIN:</p><div class="code">${code}</div><p class="mu">${H.lvl} • ${LV[H.lvl]} numbers • ${H.rounds} round${H.rounds>1?'s':''}</p><div class="spin">⏳</div></div>`)}
+function lobby(){show(`<h1 class="glow">Waiting for opponent…</h1><div class="panel"><p>On your friend’s device open this same page, tap <b>Join a game</b> and enter this PIN:</p><div class="code">${code}</div><p class="mu">${H.lvl} • ${LV[H.lvl]} numbers • ${H.rounds} round${H.rounds>1?'s':''}</p><p class="mu">Guess time: ${H.gt?H.gt+'s':'no limit'} • Arrange time: ${H.at?H.at+'s':'no limit'}</p><div class="spin">⏳</div></div>`)}
 function arr(){let sel=-1;show(`${hdr(true)}<h2>🔀 Arrange your numbers</h2><p class="mu">Tap two cards to swap. Your opponent has to guess this order!</p><div id="cards" class="cards"></div><button class="btn go" id="ok">✔ Lock it in</button>`);
  const draw=()=>{$('#cards').innerHTML=S.map((n,i)=>`<span data-i="${i}" class="${i==sel?'sel':''}">${card(n)}</span>`).join('')};draw();
  $('#cards').onclick=e=>{const el=e.target.closest('[data-i]');if(!el)return;const i=+el.dataset.i;if(sel<0)sel=i;else{[S[sel],S[i]]=[S[i],S[sel]];sel=-1;beep(500,.05)}draw()};
- let d=0;const done=()=>{if(d++)return;cw(()=>pref(me).update({ready:true}))};$('#ok').onclick=done;timer(20,done)}
+ let d=0;const done=()=>{if(d++)return;cw(()=>pref(me).update({ready:true}))};$('#ok').onclick=done;lim(H.at,done)}
 function rpick(){const tie=P[me].rps&&P[me].rps.rr<H.rr;show(`${hdr(false)}<h2>✊ Rock-Paper-Scissors</h2><p class="mu">${tie?'🤝 Tie! Pick again.':'Winner goes first!'}</p><div class="row">${RP.map((e,i)=>`<button class="btn big" data-i="${i}">${e}</button>`).join('')}</div>`);
  app.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{cw(()=>pref(me).update({rps:{rr:H.rr,v:+b.dataset.i}}))})}
 function histH(){const m=P[me],o=P[1-me];return m.guesses.map((x,i)=>{const r=o&&o.res[i];return `<div class="hr${i==m.guesses.length-1?' new':''}"><b>#${i+1}</b>${x.g?[...x.g].map((c,j)=>card(+c,r?'m-'+r[j]:'')).join('')+`<span class="sum">${r?sm(r):'…'}</span>`:'<span class="mu">⏱ Out of time</span>'}</div>`}).reverse().join('')||'<p class="mu">No guesses yet.</p>'}
@@ -93,7 +98,7 @@ function play(){const n=LV[H.lvl],p=cur(),k=H.t>>1,m=P[me];
  $('#pool').onclick=e=>{const el=e.target.closest('[data-p]');if(el&&g.length<n){g.push(+el.dataset.p);beep(600,.04);draw()}};
  $('#slots').onclick=e=>{const el=e.target.closest('[data-s]');if(el){g.splice(+el.dataset.s,1);draw()}};
  let d=0;const fin=skip=>{if(d++)return;clearInterval(tm);const gs=skip?'':g.join('');cw(()=>pref(me).update({guesses:[...P[me].guesses,{g:gs}]}))};
- $('#sub').onclick=()=>fin(false);timer(15,()=>fin(g.length<n))}
+ $('#sub').onclick=()=>fin(false);lim(H.gt,()=>fin(g.length<n))}
 function rend(){const w=H.win,[a,b]=[P[0].reveal,P[1].reveal],won=w==me;if(won){burst();beep(1200,.3)}
  show(`${hdr(false)}<div class="panel"><h2>${w<0?'🤝 Both cracked it on the same turn — draw!':won?'🏆 You won the round!':`💥 ${nm(w)} won the round`}</h2></div>${[0,1].map(i=>`<p class="mu">${nm(i)}’s numbers</p><div class="cards sm">${P[i].reveal?[...P[i].reveal].map(c=>card(+c)).join(''):'…'}</div>`).join('')}
  ${me==0?`<button class="btn go" id="nx">${H.tb||H.round>=H.rounds?(H.scores[0]==H.scores[1]?'⚡ Tie breaker!':'🏁 Final result'):'Next round ▶'}</button>`:'<p class="mu">Waiting for host to continue…</p>'}`);
@@ -130,7 +135,7 @@ function step(){if(!H)return;if(me==0)hostLogic();clientLogic();const k=key();if
 function listen(){gref=db.doc('g/'+code);gref.onSnapshot(s=>{if(s.exists){H=s.data();step()}});
  [0,1].forEach(i=>pref(i).onSnapshot(s=>{P[i]=s.exists?s.data():null;step()}))}
 async function create(name){me=0;
- H={lvl:cfg.lvl,rounds:cfg.rounds,names:[name,'…'],phase:'lobby',rk:0,rr:0,t:0,first:0,scores:[0,0],round:1,tb:false,win:null};
+ H={lvl:cfg.lvl,rounds:cfg.rounds,gt:cfg.gt,at:cfg.at,names:[name,'…'],phase:'lobby',rk:0,rr:0,t:0,first:0,scores:[0,0],round:1,tb:false,win:null};
  try{for(let i=0;i<8;i++){code=String(1000+Math.random()*9000|0);const e=await db.doc('g/'+code).get();if(!e.exists)break}
   await db.doc('g/'+code).set(H);listen()}catch(e){H=null;createScreen('Could not create game — check your Firebase config and Firestore rules.')}}
 async function join(name,c){if(c.length!=4)return $('#er').textContent='Enter the 4-digit PIN.';
