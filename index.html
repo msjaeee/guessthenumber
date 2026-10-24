@@ -1,22 +1,25 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Guess the Numbers</title>
+<title>Game Arcade</title>
 <style>
-:root{--fg:#fff;--pn:rgba(15,10,40,.55);--mu:#ffffffb8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pn:rgba(10,6,30,.6)}}
-:root[data-theme="dark"]{--pn:rgba(10,6,30,.6)}:root[data-theme="light"]{--pn:rgba(15,10,40,.5)}
+:root{--fg:#eceefb;--pn:rgba(255,255,255,.07);--mu:#a9afd0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pn:rgba(255,255,255,.07)}}
+:root[data-theme="dark"]{--pn:rgba(255,255,255,.07)}:root[data-theme="light"]{--pn:rgba(255,255,255,.07)}
 *{box-sizing:border-box}html,body{min-height:100%}
-body{margin:0;color:var(--fg);font-family:system-ui,Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#ff2d95,#7b2ff7,#1fb6ff,#00d9a0,#ffb300);background-size:500% 500%;animation:bg 16s ease infinite;background-attachment:fixed}
-@keyframes bg{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+body{margin:0;color:var(--fg);font-family:system-ui,Segoe UI,Arial,sans-serif;background-color:#12142b;background-image:radial-gradient(1100px 650px at 15% -10%,#2a2f68 0%,transparent 60%),radial-gradient(900px 600px at 100% 110%,#17495a 0%,transparent 55%);background-attachment:fixed}
 #app{max-width:760px;margin:0 auto;padding:14px;text-align:center}
-h1{margin:6px 0;font-size:2.1rem}.glow{text-shadow:0 0 18px #fff8,0 0 40px #ff2d95}h2{margin:10px 0}h3{margin:10px 0 6px}.mu{color:var(--mu)}
-.panel{background:var(--pn);backdrop-filter:blur(8px);border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 6px 24px #0004}
+h1{margin:6px 0;font-size:2.1rem}.glow{text-shadow:0 0 18px #7c83ff80}h2{margin:10px 0}h3{margin:10px 0 6px}.mu{color:var(--mu)}
+.panel{background:var(--pn);border:1px solid #ffffff1a;backdrop-filter:blur(8px);border-radius:18px;padding:14px;margin:12px 0;box-shadow:0 6px 24px #0004}
 .row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0}
 .btn{background:#ffffff26;color:#fff;border:2px solid transparent;border-radius:14px;padding:10px 16px;font-size:1rem;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:transform .15s}
 .btn:hover{transform:scale(1.06)}.btn small{font-weight:400;color:var(--mu)}.btn.on{border-color:#ffe14d;background:#ffe14d33}.btn:disabled{opacity:.4}
-.btn.go{background:linear-gradient(135deg,#ff2d95,#ff7a00);margin:12px auto;padding:12px 30px;font-size:1.15rem;box-shadow:0 4px 16px #0005}.btn.big{font-size:2.8rem;padding:10px 22px}
+.btn.go{background:linear-gradient(135deg,#6d5dfc,#a45de5);margin:12px auto;padding:12px 30px;font-size:1.15rem;box-shadow:0 4px 16px #0005}.btn.big{font-size:2.8rem;padding:10px 22px}
 input{background:#0006;color:#fff;border:2px solid #fff6;border-radius:12px;padding:11px;font-size:1.1rem;width:170px;text-align:center}
 .code{font-size:3rem;letter-spacing:.3em;font-weight:900;background:#0005;border-radius:14px;padding:6px 18px;display:inline-block}
+.games{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:16px 0}
+.gcard{background:var(--pn);backdrop-filter:blur(8px);color:#fff;border:2px solid #fff4;border-radius:20px;padding:22px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:1.1rem;transition:transform .15s,border-color .15s}
+.gcard:hover:not(.soon){transform:translateY(-4px) scale(1.03);border-color:#ffe14d}.gcard.soon{opacity:.55;cursor:not-allowed}.gi{font-size:3.2rem}.gcard small{color:var(--mu);font-size:.85rem}
+.gcard em{font-style:normal;font-weight:800;background:#ffffff26;border-radius:10px;padding:4px 12px;margin-top:6px;font-size:.9rem}
 .btn.go.big2{width:min(340px,90%);font-size:1.3rem;padding:16px}.err{color:#ffd0d0;font-weight:700;min-height:1.2em}
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800;background:var(--pn);padding:8px 12px;border-radius:14px}
 .timer{background:#1e88e5;color:#fff;border-radius:50%;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center}.timer.lo{background:#e53935;animation:pulse .5s infinite alternate}
@@ -38,13 +41,18 @@ input{background:#0006;color:#fff;border:2px solid #fff6;border-radius:12px;padd
 .m-g{outline:4px solid #22ff7a;outline-offset:1px}.m-y{outline:4px solid #ffe14d;outline-offset:1px}.m-x{opacity:.35}
 .sum{font-weight:800;margin-left:8px}.legend{font-size:.85rem;color:var(--mu)}
 .cf{position:fixed;top:-40px;animation:fall 2.6s linear forwards;pointer-events:none;z-index:9}@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+.pwp{margin:10px 0}.pwb{min-width:130px}.pwb small{font-size:.75rem}
+.clues{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}.clue{background:#ffe14d1f;border:1px solid #ffe14d80;border-radius:10px;padding:5px 10px;font-size:.9rem}
 </style></head><body><div id="app"><h2>Connecting…</h2></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="config.js"></script>
+<script src="/api/config"></script>
 <script>
 const LV={Easy:4,Medium:6,Hard:8,Pro:9},RP=['🪨','📄','✂️'],$=s=>document.querySelector(s),app=$('#app');
-let db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:'',gt:0,at:0},q=Promise.resolve(),sent={};
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+let db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:LS.get('gtn_name')||'',gt:0,at:0},q=Promise.resolve(),sent={};
+const setName=v=>{cfg.name=v.trim();if(cfg.name)LS.set('gtn_name',cfg.name);return cfg.name||'Player'};
+const rp=()=>['digit','pos','elim'][Math.random()*3|0],pk=a=>a[Math.random()*a.length|0];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=i=>esc(H.names[i]);
 const cw=f=>{q=q.then(f).catch(e=>console.error(e))},pref=i=>db.doc(`g/${code}/pl/${i}`);
 const sh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -60,9 +68,14 @@ const LEG='<p class="legend">🟢 right number, right spot • 🟡 in opponent�
 const sm=r=>`🟢${[...r].filter(c=>c=='g').length} 🟡${[...r].filter(c=>c=='y').length}`;
 const cur=()=>H.t%2==0?H.first:1-H.first;
 /* ---------- screens ---------- */
+const GAMES=[
+ {icon:'🎴',name:'Guess the Numbers',desc:'Crack your opponent’s hidden number cards.',ready:true,go:()=>home()},
+ {icon:'🔤',name:'Guess the Word',desc:'Guess your friend’s secret word.',ready:false}];
+function hub(){show(`<h1 class="glow">🎮 Game Arcade</h1><p class="mu">${cfg.name?`Welcome back, ${esc(cfg.name)}! `:''}Pick a game to play with a friend</p><div class="games">${GAMES.map((g,i)=>`<button class="gcard ${g.ready?'':'soon'}" data-k="${i}"><span class="gi">${g.icon}</span><b>${g.name}</b><small>${g.desc}</small><em>${g.ready?'▶ Play':'🚧 Coming soon'}</em></button>`).join('')}</div>`);
+ app.querySelectorAll('.gcard:not(.soon)').forEach(b=>b.onclick=()=>GAMES[+b.dataset.k].go())}
 function home(msg=''){show(`<h1 class="glow">🎴 Guess the Numbers</h1><p class="mu">Online 2-player • each on your own device</p>
-<div class="panel"><h3>What do you want to do?</h3><button class="btn go big2" id="gc">🎮 Create a game</button><button class="btn go big2" id="gj" style="background:linear-gradient(135deg,#1fb6ff,#7b2ff7)">🔑 Join a game</button></div><div class="err">${msg}</div><p class="legend">Numbers are digits 0–9, no repeats.</p>`);
- $('#gc').onclick=()=>createScreen();$('#gj').onclick=()=>joinScreen()}
+<div class="panel"><h3>What do you want to do?</h3><button class="btn go big2" id="gc">🎮 Create a game</button><button class="btn go big2" id="gj" style="background:linear-gradient(135deg,#2a9d8f,#3a86ff)">🔑 Join a game</button></div><div class="err">${msg}</div><p class="legend">Numbers are digits 0–9, no repeats.</p><button class="btn" id="hb" style="margin:8px auto">← All games</button>`);
+ $('#gc').onclick=()=>createScreen();$('#gj').onclick=()=>joinScreen();$('#hb').onclick=()=>hub()}
 const BK='<button class="btn" id="bk" style="margin:8px auto">← Back</button>';
 function createScreen(msg=''){show(`<h1 class="glow">🎮 Create a game</h1><div class="panel"><input id="nm" placeholder="Your name" value="${esc(cfg.name)}" maxlength="12">
 <p class="mu">Level</p><div class="row">${Object.keys(LV).map(k=>`<button class="btn ${k==cfg.lvl?'on':''}" data-l="${k}">${k}<small>${LV[k]} numbers</small></button>`).join('')}</div>
@@ -70,7 +83,7 @@ function createScreen(msg=''){show(`<h1 class="glow">🎮 Create a game</h1><div
 <p class="mu">⏱ Time to guess (per turn)</p><div class="row">${[[0,'No limit'],[15,'15s'],[30,'30s'],[60,'60s']].map(([v,l])=>`<button class="btn ${v==cfg.gt?'on':''}" data-g="${v}">${l}</button>`).join('')}</div>
 <p class="mu">⏱ Time to arrange numbers</p><div class="row">${[[0,'No limit'],[20,'20s'],[45,'45s'],[90,'90s']].map(([v,l])=>`<button class="btn ${v==cfg.at?'on':''}" data-a="${v}">${l}</button>`).join('')}</div>
 <button class="btn go" id="cr">Create &amp; get PIN</button></div><div class="err" id="er">${msg}</div>${BK}`);
- const nmv=()=>(cfg.name=$('#nm').value.trim()||'Player');
+ const nmv=()=>setName($('#nm').value);
  app.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>{nmv();cfg.lvl=b.dataset.l;createScreen()});
  app.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{nmv();cfg.rounds=+b.dataset.r;createScreen()});
  app.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{nmv();cfg.gt=+b.dataset.g;createScreen()});
@@ -78,8 +91,17 @@ function createScreen(msg=''){show(`<h1 class="glow">🎮 Create a game</h1><div
  $('#cr').onclick=()=>create(nmv());$('#bk').onclick=()=>home()}
 function joinScreen(msg=''){show(`<h1 class="glow">🔑 Join a game</h1><div class="panel"><input id="nm" placeholder="Your name" value="${esc(cfg.name)}" maxlength="12"><br><br>
 <input id="cd" placeholder="Game PIN" inputmode="numeric" maxlength="4" style="font-size:1.6rem;letter-spacing:.3em"><br><button class="btn go" id="jn">Join</button></div><div class="err" id="er">${msg}</div>${BK}`);
- $('#jn').onclick=()=>{cfg.name=$('#nm').value.trim()||'Player';join(cfg.name,$('#cd').value.trim())};$('#bk').onclick=()=>home()}
-function wait(msg,hist=false){show(`${hdr(false)}<div class="panel"><div class="spin">⏳</div><h2>${msg}</h2></div>${hist?`<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>${LEG}`:''}`)}
+ $('#jn').onclick=()=>{join(setName($('#nm').value),$('#cd').value.trim())};$('#bk').onclick=()=>home()}
+const PW={digit:['🔍','Reveal a digit'],pos:['📍','Reveal a position'],elim:['🚫','Rule out digits']};
+function pwH(){const m=P[me],o=P[1-me];if(!m||!m.pw||!m.pw.length)return'';
+ const used=m.pu||[],k=H.t>>1,can=H.phase=='play'&&cur()==me&&m.guesses.length<=k&&!used.some(u=>u.turn==H.t);
+ const bt=m.pw.map((t,i)=>{const u=used.some(x=>x.i==i);return `<button class="btn pwb" data-w="${i}" ${!can||u?'disabled':''}>${PW[t][0]}<small>${u?'used':PW[t][1]}</small></button>`}).join('');
+ const cl=((o&&o.pr)||[]).map(c=>c[0]=='D'?`🔍 <b>${c.slice(1)}</b> is in their set`:c[0]=='P'?`📍 Spot <b>${+c.slice(1).split(':')[0]+1}</b> is <b>${c.split(':')[1]}</b>`:`🚫 Not in their set: <b>${c.slice(1).split(',').join(', ')}</b>`).map(x=>`<span class="clue">${x}</span>`).join('');
+ return `<div class="panel pwp"><b>⚡ Power-ups</b> <span class="mu">(1 per turn)</span><div class="row">${bt}</div>${cl?`<div class="clues">${cl}</div>`:''}</div>`}
+const pwBox=()=>`<div id="pw">${pwH()}</div>`;
+function bindPw(){app.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{const key=H.rk+'/'+H.t;if(sent.u==key)return;sent.u=key;const i=+b.dataset.w;cw(()=>pref(me).update({pu:[...P[me].pu,{i,t:P[me].pw[i],turn:H.t}]}))})}
+function refreshInfo(){const e=$('#pw');if(!e||!H||!P[me])return;e.innerHTML=pwH();bindPw()}
+function wait(msg,hist=false){show(`${hdr(false)}<div class="panel"><div class="spin">⏳</div><h2>${msg}</h2></div>${hist?`<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>${LEG}`:''}${hist?pwBox():''}`);if(hist)bindPw()}
 function lobby(){show(`<h1 class="glow">Waiting for opponent…</h1><div class="panel"><p>On your friend’s device open this same page, tap <b>Join a game</b> and enter this PIN:</p><div class="code">${code}</div><p class="mu">${H.lvl} • ${LV[H.lvl]} numbers • ${H.rounds} round${H.rounds>1?'s':''}</p><p class="mu">Guess time: ${H.gt?H.gt+'s':'no limit'} • Arrange time: ${H.at?H.at+'s':'no limit'}</p><div class="spin">⏳</div></div>`)}
 function arr(){let sel=-1;show(`${hdr(true)}<h2>🔀 Arrange your numbers</h2><p class="mu">Tap two cards to swap. Your opponent has to guess this order!</p><div id="cards" class="cards"></div><button class="btn go" id="ok">✔ Lock it in</button>`);
  const draw=()=>{$('#cards').innerHTML=S.map((n,i)=>`<span data-i="${i}" class="${i==sel?'sel':''}">${card(n)}</span>`).join('')};draw();
@@ -92,8 +114,8 @@ function play(){const n=LV[H.lvl],p=cur(),k=H.t>>1,m=P[me];
  if(p!=me)return wait(`${nm(p)} is guessing…`,true);
  if(m.guesses.length>k)return wait('Checking your guess…',true);
  const g=[];beep(990,.15);
- show(`${hdr(true)}<h2>🎯 Your turn${H.t==0?' — you go first!':''}</h2><div id="slots" class="cards"></div><div id="pool" class="pool cards"></div><button class="btn go" id="sub" disabled>Guess!</button>${LEG}<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>`);
- const draw=()=>{$('#slots').innerHTML=[...Array(n)].map((_,i)=>g[i]!=null?`<span data-s="${i}">${card(g[i])}</span>`:`<div class="card empty"><b>?</b></div>`).join('');
+ show(`${hdr(true)}<h2>🎯 Your turn${H.t==0?' — you go first!':''}</h2><div id="slots" class="cards"></div><div id="pool" class="pool cards"></div><button class="btn go" id="sub" disabled>Guess!</button>${pwBox()}${LEG}<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>`);
+ bindPw();const draw=()=>{$('#slots').innerHTML=[...Array(n)].map((_,i)=>g[i]!=null?`<span data-s="${i}">${card(g[i])}</span>`:`<div class="card empty"><b>?</b></div>`).join('');
   $('#pool').innerHTML=[...Array(10)].map((_,i)=>`<span data-p="${i}" class="${g.includes(i)?'used':''}">${card(i)}</span>`).join('');$('#sub').disabled=g.length<n};draw();
  $('#pool').onclick=e=>{const el=e.target.closest('[data-p]');if(el&&g.length<n){g.push(+el.dataset.p);beep(600,.04);draw()}};
  $('#slots').onclick=e=>{const el=e.target.closest('[data-s]');if(el){g.splice(+el.dataset.s,1);draw()}};
@@ -125,13 +147,18 @@ function hostLogic(){const[a,b]=P;
  else if(H.phase=='play'){const p=cur(),k=H.t>>1;if(P[p].guesses.length>k&&P[1-p].res.length>k){const c0=cracked(0),c1=cracked(1);
   if(H.t%2==1&&(c0||c1)){const w=c0&&c1?-1:c0?0:1,sc=[...H.scores];if(w>=0)sc[w]++;hs({phase:'roundend',win:w,scores:sc})}else hs({t:H.t+1})}}}
 function clientLogic(){const m=P[me],o=P[1-me];
- if(H.rk>0&&(!m||m.rk!=H.rk)){if(seen!=H.rk){seen=H.rk;S=sh([0,1,2,3,4,5,6,7,8,9]).slice(0,LV[H.lvl]);cw(()=>pref(me).set({name:H.names[me],rk:H.rk,ready:false,rps:null,guesses:[],res:[],reveal:null}))}return}
+ if(H.rk>0&&(!m||m.rk!=H.rk)){if(seen!=H.rk){seen=H.rk;S=sh([0,1,2,3,4,5,6,7,8,9]).slice(0,LV[H.lvl]);cw(()=>pref(me).set({name:H.names[me],rk:H.rk,ready:false,rps:null,guesses:[],res:[],reveal:null,pw:[rp(),rp()],pu:[],pr:[]}))}return}
  if(!m||!o||o.rk!=H.rk||m.rk!=H.rk)return;
  const i=m.res.length;if(H.phase=='play'&&o.guesses.length>i&&sent.r!=H.rk+'/'+i){sent.r=H.rk+'/'+i;const g=o.guesses[i].g;
   const r=g?[...g].map((c,j)=>+c==S[j]?'g':S.includes(+c)?'y':'x').join(''):'';cw(()=>pref(me).update({res:[...P[me].res,r]}))}
+ const j=m.pr.length;if(H.phase=='play'&&o.pu.length>j&&sent.p!=H.rk+'/'+j){sent.p=H.rk+'/'+j;const t=o.pu[j].t;let r;
+  if(t=='digit'){const kn=m.pr.filter(c=>c[0]=='D').map(c=>+c.slice(1)),pl=S.filter(d=>!kn.includes(d));r='D'+pk(pl.length?pl:S)}
+  else if(t=='pos'){const kn=m.pr.filter(c=>c[0]=='P').map(c=>+c.slice(1).split(':')[0]),ix=[...S.keys()].filter(x=>!kn.includes(x)),x=pk(ix.length?ix:[...S.keys()]);r='P'+x+':'+S[x]}
+  else{const ab=[0,1,2,3,4,5,6,7,8,9].filter(d=>!S.includes(d));r='X'+sh(ab).slice(0,2).join(',')}
+  cw(()=>pref(me).update({pr:[...P[me].pr,r]}))}
  if(H.phase=='roundend'&&m.reveal==null&&sent.v!=H.rk){sent.v=H.rk;cw(()=>pref(me).update({reveal:S.join('')}))}}
 const key=()=>[H.phase,H.rk,H.rr,H.t,H.scores,H.win,H.names,P.map(p=>p?[p.rk,p.ready,p.rps&&p.rps.rr,p.guesses.length,p.res.length,p.reveal!=null]:0)].join('|');
-function step(){if(!H)return;if(me==0)hostLogic();clientLogic();const k=key();if(k!=lastKey){lastKey=k;screen()}}
+function step(){if(!H)return;if(me==0)hostLogic();clientLogic();const k=key();if(k!=lastKey){lastKey=k;screen()}else refreshInfo()}
 function listen(){gref=db.doc('g/'+code);gref.onSnapshot(s=>{if(s.exists){H=s.data();step()}});
  [0,1].forEach(i=>pref(i).onSnapshot(s=>{P[i]=s.exists?s.data():null;step()}))}
 async function create(name){me=0;
@@ -140,8 +167,8 @@ async function create(name){me=0;
   await db.doc('g/'+code).set(H);listen()}catch(e){H=null;createScreen('Could not create game — check your Firebase config and Firestore rules.')}}
 async function join(name,c){if(c.length!=4)return $('#er').textContent='Enter the 4-digit PIN.';
  try{const s=await db.doc('g/'+c).get();if(!s.exists||s.data().phase!='lobby')return $('#er').textContent='PIN not found or game already started.';
-  code=c;me=1;await pref(1).set({name,rk:-1,ready:false,rps:null,guesses:[],res:[],reveal:null});listen()}catch(e){$('#er').textContent='Could not join — check the PIN, your connection and Firestore rules.'}}
+  code=c;me=1;await pref(1).set({name,rk:-1,ready:false,rps:null,guesses:[],res:[],reveal:null,pw:[],pu:[],pr:[]});listen()}catch(e){$('#er').textContent='Could not join — check the PIN, your connection and Firestore rules.'}}
 (()=>{const c=window.FIREBASE_CONFIG;
- if(!c||!c.apiKey||String(c.apiKey).startsWith('PASTE')){app.innerHTML='<div class="panel"><h2>⚙️ Setup needed</h2><p>Add your Firebase config to <b>config.js</b> (see README.md).</p></div>';return}
- try{firebase.initializeApp(c);db=firebase.firestore();home()}catch(e){app.innerHTML='<div class="panel"><h2>Firebase error</h2><p>'+esc(e.message)+'</p></div>'}})();
+ if(!c||!c.apiKey||String(c.apiKey).startsWith('PASTE')){app.innerHTML='<div class="panel"><h2>⚙️ Setup needed</h2><p>Set the Firebase environment variables in Vercel (see README.md), then redeploy.</p></div>';return}
+ try{firebase.initializeApp(c);db=firebase.firestore();hub()}catch(e){app.innerHTML='<div class="panel"><h2>Firebase error</h2><p>'+esc(e.message)+'</p></div>'}})();
 </script></body></html>
