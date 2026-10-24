@@ -43,6 +43,20 @@ input{background:#0006;color:#fff;border:2px solid #fff6;border-radius:12px;padd
 .cf{position:fixed;top:-40px;animation:fall 2.6s linear forwards;pointer-events:none;z-index:9}@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
 .pwp{margin:10px 0}.pwb{min-width:130px}.pwb small{font-size:.75rem}
 .clues{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:6px}.clue{background:#ffe14d1f;border:1px solid #ffe14d80;border-radius:10px;padding:5px 10px;font-size:.9rem}
+
+.pcard{--c1:#444;--c2:#222;width:108px;height:156px;border-radius:16px;border:4px solid #fff;color:#fff;background:linear-gradient(160deg,var(--c1),var(--c2));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:6px;cursor:pointer;position:relative;box-shadow:0 4px 14px #0007,0 0 16px var(--c1);transition:transform .15s;font-family:inherit}
+.pcard:hover:not(:disabled){transform:translateY(-6px) rotate(-2deg)}
+.pcard i{font-style:normal;width:58px;height:58px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.9rem;transform:rotate(-12deg);box-shadow:inset 0 0 0 3px var(--c1)}
+.pcard b{font-size:.92rem;text-transform:uppercase;letter-spacing:.04em}.pcard small{font-size:.68rem;line-height:1.15;opacity:.92}
+.pcard::before{content:'★';position:absolute;top:3px;left:7px;font-size:.8rem}.pcard::after{content:'★';position:absolute;bottom:3px;right:7px;font-size:.8rem;transform:rotate(180deg)}
+.pcard:disabled{filter:grayscale(.85) brightness(.7);cursor:not-allowed;box-shadow:none}
+.pcard.usedc::before{content:'USED';font-size:.65rem;font-weight:900;background:#000b;padding:2px 6px;border-radius:6px;left:50%;top:6px;transform:translateX(-50%)}
+.p-xray{--c1:#0aa7a0;--c2:#1b4fa8}.p-mutate{--c1:#c13bd6;--c2:#6a2bc2}.p-lock{--c1:#f08a24;--c2:#b8322a}.p-steal{--c1:#f5c518;--c2:#e8561e}
+.locked{background:#3b3f55;border-color:#aab;animation:none}.locked b{background:none;color:#fff;transform:none;font-size:calc(var(--w)*.5)}.locked::before,.locked::after{content:''}
+.flash{animation:flash 1s 3}@keyframes flash{50%{box-shadow:0 0 0 4px #ffe14d,0 0 20px #ffe14d}}
+.clue.bad{background:#ff5d5d26;border-color:#ff5d5d99;display:inline-block}.own{margin-top:8px}
+.p-shield{--c1:#3a86ff;--c2:#1d3a8a}.p-freeze{--c1:#6ee7f9;--c2:#3b6fe0}
+@media(max-width:480px){.pcard{width:82px;height:128px;padding:4px}.pcard i{width:42px;height:42px;font-size:1.35rem}.pcard b{font-size:.75rem}.pcard small{font-size:.58rem}}
 </style></head><body><div id="app"><h2>Connecting…</h2></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -50,7 +64,7 @@ input{background:#0006;color:#fff;border:2px solid #fff6;border-radius:12px;padd
 <script>
 const LV={Easy:4,Medium:6,Hard:8,Pro:9},RP=['🪨','📄','✂️'],$=s=>document.querySelector(s),app=$('#app');
 const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-let db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:LS.get('gtn_name')||'',gt:0,at:0},q=Promise.resolve(),sent={};
+let addT=()=>{},mutIdx=-1,db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:LS.get('gtn_name')||'',gt:0,at:0},q=Promise.resolve(),sent={};
 const setName=v=>{cfg.name=v.trim();if(cfg.name)LS.set('gtn_name',cfg.name);return cfg.name||'Player'};
 const rp=()=>['digit','pos','elim'][Math.random()*3|0],pk=a=>a[Math.random()*a.length|0];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=i=>esc(H.names[i]);
@@ -60,13 +74,15 @@ const card=(n,c='')=>`<div class="card c${n%4} ${c}" data-n="${n}"><b>${n}</b></
 const beep=(f=660,d=.12)=>{try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.value=.07;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}};
 function burst(){for(let i=0;i<40;i++){const e=document.createElement('i');e.className='cf';e.textContent=['🎉','✨','🎊','⭐'][i%4];e.style.cssText=`left:${Math.random()*100}vw;animation-delay:${Math.random()}s;font-size:${16+Math.random()*20}px`;document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 function show(h){clearInterval(tm);app.innerHTML=h;app.style.setProperty('--cw',{4:68,6:54,8:44,9:40}[LV[H?H.lvl:cfg.lvl]]+'px')}
-function timer(s,cb){let t=s;const e=$('#t');e.textContent=t;tm=setInterval(()=>{t--;e.textContent=t;e.classList.toggle('lo',t<=5);if(t<=5&&t>0)beep(880,.05);if(t<=0){clearInterval(tm);cb()}},1000)}
+function timer(s,cb){let t=s;const e=$('#t');e.textContent=t;addT=n=>{t+=n;e.textContent=t;e.classList.toggle('lo',t<=5)};tm=setInterval(()=>{t--;e.textContent=t;e.classList.toggle('lo',t<=5);if(t<=5&&t>0)beep(880,.05);if(t<=0){clearInterval(tm);cb()}},1000)}
 const lim=(s,cb)=>{if(s)timer(s,cb);else{const e=$('#t');if(e){e.textContent='∞';e.style.background='#6b7280'}}};
 const label=()=>H.tb?'⚡ TIE BREAKER':`Round ${H.round}/${H.rounds}`;
 const hdr=t=>`<div class="top"><span>${label()}</span><span>${nm(0)} ${H.scores[0]} – ${H.scores[1]} ${nm(1)}</span>${t?'<span class="timer" id="t"></span>':''}</div>`;
 const LEG='<p class="legend">🟢 right number, right spot • 🟡 in opponent’s set, wrong spot • faded = not in set</p>';
 const sm=r=>`🟢${[...r].filter(c=>c=='g').length} 🟡${[...r].filter(c=>c=='y').length}`;
 const cur=()=>H.t%2==0?H.first:1-H.first;
+const ATK=['xray','mutate','lock','steal'];
+const hit=ty=>{const o=P[1-me],m=P[me];return((o&&o.pu)||[]).find((u,j)=>u.t==ty&&u.turn==H.t-1&&((m&&m.pr)||[])[j]!=='B')};
 /* ---------- screens ---------- */
 const GAMES=[
  {icon:'🎴',name:'Guess the Numbers',desc:'Crack your opponent’s hidden number cards.',ready:true,go:()=>home()},
@@ -92,14 +108,17 @@ function createScreen(msg=''){show(`<h1 class="glow">🎮 Create a game</h1><div
 function joinScreen(msg=''){show(`<h1 class="glow">🔑 Join a game</h1><div class="panel"><input id="nm" placeholder="Your name" value="${esc(cfg.name)}" maxlength="12"><br><br>
 <input id="cd" placeholder="Game PIN" inputmode="numeric" maxlength="4" style="font-size:1.6rem;letter-spacing:.3em"><br><button class="btn go" id="jn">Join</button></div><div class="err" id="er">${msg}</div>${BK}`);
  $('#jn').onclick=()=>{join(setName($('#nm').value),$('#cd').value.trim())};$('#bk').onclick=()=>home()}
-const PW={digit:['🔍','Reveal a digit'],pos:['📍','Reveal a position'],elim:['🚫','Rule out digits']};
+const PW={xray:['🔦','X-Ray','Reveal one of their cards'],mutate:['🧬','Mutate','Change one of their cards'],lock:['🔒','Lock Down','Lock a slot on their next guess'],steal:['⚡','Steal Turn','Skip their next turn'],shield:['🛡️','Shield','Block the next power-up used on you'],freeze:['❄️','Time Freeze','+15s on your timer']};
 function pwH(){const m=P[me],o=P[1-me];if(!m||!m.pw||!m.pw.length)return'';
- const used=m.pu||[],k=H.t>>1,can=H.phase=='play'&&cur()==me&&m.guesses.length<=k&&!used.some(u=>u.turn==H.t);
- const bt=m.pw.map((t,i)=>{const u=used.some(x=>x.i==i);return `<button class="btn pwb" data-w="${i}" ${!can||u?'disabled':''}>${PW[t][0]}<small>${u?'used':PW[t][1]}</small></button>`}).join('');
- const cl=((o&&o.pr)||[]).map(c=>c[0]=='D'?`🔍 <b>${c.slice(1)}</b> is in their set`:c[0]=='P'?`📍 Spot <b>${+c.slice(1).split(':')[0]+1}</b> is <b>${c.split(':')[1]}</b>`:`🚫 Not in their set: <b>${c.slice(1).split(',').join(', ')}</b>`).map(x=>`<span class="clue">${x}</span>`).join('');
- return `<div class="panel pwp"><b>⚡ Power-ups</b> <span class="mu">(1 per turn)</span><div class="row">${bt}</div>${cl?`<div class="clues">${cl}</div>`:''}</div>`}
+ const used=m.pu||[],k=H.t>>1,base=H.phase=='play'&&cur()==me&&m.guesses.length<=k;
+ const bt=m.pw.map((t,i)=>{const u=used.some(x=>x.i==i),can=base&&!u&&!used.some(x=>x.turn==H.t&&ATK.includes(x.t)==ATK.includes(t))&&(t!='freeze'||H.gt);
+  return `<button class="pcard p-${t}${u?' usedc':''}" data-w="${i}" ${can?'':'disabled'}><i>${PW[t][0]}</i><b>${PW[t][1]}</b><small>${t=='freeze'&&!H.gt?'(needs a time limit)':PW[t][2]}</small></button>`}).join('');
+ const cl=((o&&o.pr)||[]).filter(c=>c!='-').map(c=>c[0]=='P'?`🔦 Spot <b>${+c.slice(1).split(':')[0]+1}</b> is <b>${c.split(':')[1]}</b>`:c=='M'?'🧬 You mutated one of their cards — old clues may be outdated':c=='L'?'🔒 A slot of their next guess is locked':c=='B'?'🛡️ Blocked by their shield!':'⚡ Their next turn is stolen').map(x=>`<span class="clue">${x}</span>`).join('');
+ const up=used.filter(u=>u.t=='shield').length-m.pr.filter(c=>c=='B').length;
+ const ev=[...(up>0?['🛡️ Your shield is up']:[]),...((o&&o.pu)||[]).map((u,j)=>m.pr[j]=='B'&&ATK.includes(u.t)?'🛡️ Your shield blocked a power-up!':u.t=='mutate'?'🧬 Opponent mutated one of your cards!':u.t=='lock'?'🔒 Opponent locked a slot on your guess':u.t=='steal'?'⚡ Opponent stole your turn!':null).filter(Boolean)].map(x=>`<span class="clue bad">${x}</span>`).join('');
+ return `<div class="panel pwp"><b>⚡ Power-ups</b> <span class="mu">(1 attack + 1 utility per turn, on your turn)</span><div class="row">${bt}</div>${cl?`<div class="clues">${cl}</div>`:''}${ev?`<div class="clues">${ev}</div>`:''}<div class="own"><span class="mu">Your hidden cards</span><div class="cards sm">${S.map((n,i)=>card(n,i==mutIdx?'flash':'')).join('')}</div></div></div>`}
 const pwBox=()=>`<div id="pw">${pwH()}</div>`;
-function bindPw(){app.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{const key=H.rk+'/'+H.t;if(sent.u==key)return;sent.u=key;const i=+b.dataset.w;cw(()=>pref(me).update({pu:[...P[me].pu,{i,t:P[me].pw[i],turn:H.t}]}))})}
+function bindPw(){app.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{const i=+b.dataset.w,t=P[me].pw[i],key=H.rk+'/'+H.t+'/'+ATK.includes(t);if(sent.u==key)return;sent.u=key;const e={i,t,turn:H.t};if(t=='lock')e.slot=Math.random()*LV[H.lvl]|0;if(t=='freeze')addT(15);beep(1100,.12);cw(()=>pref(me).update({pu:[...P[me].pu,e]}))})}
 function refreshInfo(){const e=$('#pw');if(!e||!H||!P[me])return;e.innerHTML=pwH();bindPw()}
 function wait(msg,hist=false){show(`${hdr(false)}<div class="panel"><div class="spin">⏳</div><h2>${msg}</h2></div>${hist?`<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>${LEG}`:''}${hist?pwBox():''}`);if(hist)bindPw()}
 function lobby(){show(`<h1 class="glow">Waiting for opponent…</h1><div class="panel"><p>On your friend’s device open this same page, tap <b>Join a game</b> and enter this PIN:</p><div class="code">${code}</div><p class="mu">${H.lvl} • ${LV[H.lvl]} numbers • ${H.rounds} round${H.rounds>1?'s':''}</p><p class="mu">Guess time: ${H.gt?H.gt+'s':'no limit'} • Arrange time: ${H.at?H.at+'s':'no limit'}</p><div class="spin">⏳</div></div>`)}
@@ -109,18 +128,21 @@ function arr(){let sel=-1;show(`${hdr(true)}<h2>🔀 Arrange your numbers</h2><p
  let d=0;const done=()=>{if(d++)return;cw(()=>pref(me).update({ready:true}))};$('#ok').onclick=done;lim(H.at,done)}
 function rpick(){const tie=P[me].rps&&P[me].rps.rr<H.rr;show(`${hdr(false)}<h2>✊ Rock-Paper-Scissors</h2><p class="mu">${tie?'🤝 Tie! Pick again.':'Winner goes first!'}</p><div class="row">${RP.map((e,i)=>`<button class="btn big" data-i="${i}">${e}</button>`).join('')}</div>`);
  app.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{cw(()=>pref(me).update({rps:{rr:H.rr,v:+b.dataset.i}}))})}
-function histH(){const m=P[me],o=P[1-me];return m.guesses.map((x,i)=>{const r=o&&o.res[i];return `<div class="hr${i==m.guesses.length-1?' new':''}"><b>#${i+1}</b>${x.g?[...x.g].map((c,j)=>card(+c,r?'m-'+r[j]:'')).join('')+`<span class="sum">${r?sm(r):'…'}</span>`:'<span class="mu">⏱ Out of time</span>'}</div>`}).reverse().join('')||'<p class="mu">No guesses yet.</p>'}
-function play(){const n=LV[H.lvl],p=cur(),k=H.t>>1,m=P[me];
+function histH(){const m=P[me],o=P[1-me];return m.guesses.map((x,i)=>{const r=o&&o.res[i];return `<div class="hr${i==m.guesses.length-1?' new':''}"><b>#${i+1}</b>${x.g?[...x.g].map((c,j)=>(c=='L'?'<div class="card locked"><b>🔒</b></div>':card(+c,r?'m-'+r[j]:''))).join('')+`<span class="sum">${r?sm(r):'…'}</span>`:(x.s?'<span class="mu">⚡ Turn stolen</span>':'<span class="mu">⏱ Out of time</span>')}</div>`}).reverse().join('')||'<p class="mu">No guesses yet.</p>'}
+function play(){const n=LV[H.lvl],p=cur(),k=H.t>>1,m=P[me],o=P[1-me];
  if(p!=me)return wait(`${nm(p)} is guessing…`,true);
  if(m.guesses.length>k)return wait('Checking your guess…',true);
- const g=[];beep(990,.15);
- show(`${hdr(true)}<h2>🎯 Your turn${H.t==0?' — you go first!':''}</h2><div id="slots" class="cards"></div><div id="pool" class="pool cards"></div><button class="btn go" id="sub" disabled>Guess!</button>${pwBox()}${LEG}<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>`);
- bindPw();const draw=()=>{$('#slots').innerHTML=[...Array(n)].map((_,i)=>g[i]!=null?`<span data-s="${i}">${card(g[i])}</span>`:`<div class="card empty"><b>?</b></div>`).join('');
-  $('#pool').innerHTML=[...Array(10)].map((_,i)=>`<span data-p="${i}" class="${g.includes(i)?'used':''}">${card(i)}</span>`).join('');$('#sub').disabled=g.length<n};draw();
- $('#pool').onclick=e=>{const el=e.target.closest('[data-p]');if(el&&g.length<n){g.push(+el.dataset.p);beep(600,.04);draw()}};
- $('#slots').onclick=e=>{const el=e.target.closest('[data-s]');if(el){g.splice(+el.dataset.s,1);draw()}};
- let d=0;const fin=skip=>{if(d++)return;clearInterval(tm);const gs=skip?'':g.join('');cw(()=>pref(me).update({guesses:[...P[me].guesses,{g:gs}]}))};
- $('#sub').onclick=()=>fin(false);lim(H.gt,()=>fin(g.length<n))}
+ if(hit('steal'))return wait('⚡ Your turn was stolen!',true);
+ const lk=hit('lock'),ls=lk?lk.slot%n:-1,g=Array(n).fill(null);if(ls>=0)g[ls]='L';
+ beep(990,.15);
+ show(`${hdr(true)}<h2>🎯 Your turn${H.t==0?' — you go first!':''}</h2>${ls>=0?`<p class="clue bad">🔒 Slot ${ls+1} is locked this turn!</p>`:''}<div id="slots" class="cards"></div><div id="pool" class="pool cards"></div><button class="btn go" id="sub" disabled>Guess!</button>${pwBox()}${LEG}<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>`);
+ bindPw();
+ const draw=()=>{$('#slots').innerHTML=g.map((x,i)=>x=='L'?'<div class="card locked"><b>🔒</b></div>':x!=null?`<span data-s="${i}">${card(x)}</span>`:'<div class="card empty"><b>?</b></div>').join('');
+  $('#pool').innerHTML=[...Array(10)].map((_,i)=>`<span data-p="${i}" class="${g.includes(i)?'used':''}">${card(i)}</span>`).join('');$('#sub').disabled=g.includes(null)};draw();
+ $('#pool').onclick=e=>{const el=e.target.closest('[data-p]'),i=g.indexOf(null);if(el&&i>=0){g[i]=+el.dataset.p;beep(600,.04);draw()}};
+ $('#slots').onclick=e=>{const el=e.target.closest('[data-s]');if(el){g[+el.dataset.s]=null;draw()}};
+ let d=0;const fin=skip=>{if(d++)return;clearInterval(tm);const gs=skip?'':g.map(x=>x==null?'':x).join('');cw(()=>pref(me).update({guesses:[...P[me].guesses,{g:gs}]}))};
+ $('#sub').onclick=()=>fin(false);lim(H.gt,()=>fin(g.includes(null)))}
 function rend(){const w=H.win,[a,b]=[P[0].reveal,P[1].reveal],won=w==me;if(won){burst();beep(1200,.3)}
  show(`${hdr(false)}<div class="panel"><h2>${w<0?'🤝 Both cracked it on the same turn — draw!':won?'🏆 You won the round!':`💥 ${nm(w)} won the round`}</h2></div>${[0,1].map(i=>`<p class="mu">${nm(i)}’s numbers</p><div class="cards sm">${P[i].reveal?[...P[i].reveal].map(c=>card(+c)).join(''):'…'}</div>`).join('')}
  ${me==0?`<button class="btn go" id="nx">${H.tb||H.round>=H.rounds?(H.scores[0]==H.scores[1]?'⚡ Tie breaker!':'🏁 Final result'):'Next round ▶'}</button>`:'<p class="mu">Waiting for host to continue…</p>'}`);
@@ -147,14 +169,17 @@ function hostLogic(){const[a,b]=P;
  else if(H.phase=='play'){const p=cur(),k=H.t>>1;if(P[p].guesses.length>k&&P[1-p].res.length>k){const c0=cracked(0),c1=cracked(1);
   if(H.t%2==1&&(c0||c1)){const w=c0&&c1?-1:c0?0:1,sc=[...H.scores];if(w>=0)sc[w]++;hs({phase:'roundend',win:w,scores:sc})}else hs({t:H.t+1})}}}
 function clientLogic(){const m=P[me],o=P[1-me];
- if(H.rk>0&&(!m||m.rk!=H.rk)){if(seen!=H.rk){seen=H.rk;S=sh([0,1,2,3,4,5,6,7,8,9]).slice(0,LV[H.lvl]);cw(()=>pref(me).set({name:H.names[me],rk:H.rk,ready:false,rps:null,guesses:[],res:[],reveal:null,pw:[rp(),rp()],pu:[],pr:[]}))}return}
+ if(H.rk>0&&(!m||m.rk!=H.rk)){if(seen!=H.rk){seen=H.rk;mutIdx=-1;S=sh([0,1,2,3,4,5,6,7,8,9]).slice(0,LV[H.lvl]);cw(()=>pref(me).set({name:H.names[me],rk:H.rk,ready:false,rps:null,guesses:[],res:[],reveal:null,pw:[...sh(['xray','mutate','lock','steal']).slice(0,2),'shield','freeze'],pu:[],pr:[]}))}return}
  if(!m||!o||o.rk!=H.rk||m.rk!=H.rk)return;
  const i=m.res.length;if(H.phase=='play'&&o.guesses.length>i&&sent.r!=H.rk+'/'+i){sent.r=H.rk+'/'+i;const g=o.guesses[i].g;
   const r=g?[...g].map((c,j)=>+c==S[j]?'g':S.includes(+c)?'y':'x').join(''):'';cw(()=>pref(me).update({res:[...P[me].res,r]}))}
- const j=m.pr.length;if(H.phase=='play'&&o.pu.length>j&&sent.p!=H.rk+'/'+j){sent.p=H.rk+'/'+j;const t=o.pu[j].t;let r;
-  if(t=='digit'){const kn=m.pr.filter(c=>c[0]=='D').map(c=>+c.slice(1)),pl=S.filter(d=>!kn.includes(d));r='D'+pk(pl.length?pl:S)}
-  else if(t=='pos'){const kn=m.pr.filter(c=>c[0]=='P').map(c=>+c.slice(1).split(':')[0]),ix=[...S.keys()].filter(x=>!kn.includes(x)),x=pk(ix.length?ix:[...S.keys()]);r='P'+x+':'+S[x]}
-  else{const ab=[0,1,2,3,4,5,6,7,8,9].filter(d=>!S.includes(d));r='X'+sh(ab).slice(0,2).join(',')}
+ if(H.phase=='play'&&cur()==me&&m.guesses.length==(H.t>>1)&&hit('steal')&&sent.s!=H.rk+'/'+H.t){sent.s=H.rk+'/'+H.t;cw(()=>pref(me).update({guesses:[...P[me].guesses,{g:'',s:1}]}))}
+ const j=m.pr.length;if(H.phase=='play'&&o.pu.length>j&&sent.p!=H.rk+'/'+j){sent.p=H.rk+'/'+j;const t=o.pu[j].t;let r=t=='steal'?'T':'-';
+  const shield=m.pu.filter(u=>u.t=='shield').length-m.pr.filter(c=>c=='B').length;
+  if(ATK.includes(t)&&shield>0)r='B';
+  else if(t=='xray'){const kn=m.pr.filter(c=>c[0]=='P').map(c=>+c.slice(1).split(':')[0]),ix=[...S.keys()].filter(x=>!kn.includes(x)),x=pk(ix.length?ix:[...S.keys()]);r='P'+x+':'+S[x]}
+  else if(t=='mutate'){const ab=[0,1,2,3,4,5,6,7,8,9].filter(d=>!S.includes(d)),x=Math.random()*S.length|0;S[x]=pk(ab);mutIdx=x;r='M'}
+  else if(t=='lock')r='L';
   cw(()=>pref(me).update({pr:[...P[me].pr,r]}))}
  if(H.phase=='roundend'&&m.reveal==null&&sent.v!=H.rk){sent.v=H.rk;cw(()=>pref(me).update({reveal:S.join('')}))}}
 const key=()=>[H.phase,H.rk,H.rr,H.t,H.scores,H.win,H.names,P.map(p=>p?[p.rk,p.ready,p.rps&&p.rps.rr,p.guesses.length,p.res.length,p.reveal!=null]:0)].join('|');
