@@ -93,7 +93,7 @@ const hdr=t=>`<div class="top"><span>${label()}</span><span>${nm(0)} ${H.scores[
 const LEG='<p class="legend">🟢 right number, right spot • 🟡 in opponent’s set, wrong spot • faded = not in set</p>';
 const sm=r=>`🟢${[...r].filter(c=>c=='g').length} 🟡${[...r].filter(c=>c=='y').length}`;
 const cur=()=>H.t%2==0?H.first:1-H.first;
-const ATK=['xray','mutate','lock','steal'];
+const ATK=['xray','lock','steal'];
 const hit=ty=>{const o=P[1-me],m=P[me];return((o&&o.pu)||[]).find((u,j)=>u.t==ty&&u.turn==H.t-1&&((m&&m.pr)||[])[j]!=='B')};
 /* ---------- screens ---------- */
 const GAMES=[
@@ -120,18 +120,18 @@ function createScreen(msg=''){show(`<h1 class="glow">🎮 Create a game</h1><div
 function joinScreen(msg=''){show(`<h1 class="glow">🔑 Join a game</h1><div class="panel"><input id="nm" placeholder="Your name" value="${esc(cfg.name)}" maxlength="12"><br><br>
 <input id="cd" placeholder="Game PIN" inputmode="numeric" maxlength="4" style="font-size:1.6rem;letter-spacing:.3em"><br><button class="btn go" id="jn">Join</button></div><div class="err" id="er">${msg}</div>${BK}`);
  $('#jn').onclick=()=>{join(setName($('#nm').value),$('#cd').value.trim())};$('#bk').onclick=()=>home()}
-const PW={xray:['🔦','X-Ray','Reveal one of their cards'],mutate:['🧬','Mutate','Change one of their cards'],lock:['🔒','Lock Down','Lock a slot on their next guess'],steal:['⚡','Steal Turn','Skip their next turn'],shield:['🛡️','Shield','Block the next power-up used on you'],freeze:['❄️','Time Freeze','+15s on your timer']};
+const PW={xray:['🔦','X-Ray','Reveal one of their cards'],mutate:['🧬','Mutate','Change one of YOUR cards (their old clues go stale)'],lock:['🔒','Lock Down','Lock a slot on their next guess'],steal:['⚡','Steal Turn','Skip their next turn'],shield:['🛡️','Shield','Block the next power-up used on you'],freeze:['❄️','Time Freeze','+15s on your timer']};
 function pwH(){const m=P[me],o=P[1-me];if(!m||!m.pw||!m.pw.length)return'';
  const used=m.pu||[],k=H.t>>1,base=H.phase=='play'&&cur()==me&&m.guesses.length<=k;
  const bt=m.pw.map((t,i)=>{const u=used.some(x=>x.i==i),can=base&&!u&&!used.some(x=>x.turn==H.t&&ATK.includes(x.t)==ATK.includes(t))&&(t!='freeze'||H.gt);
   return `<button class="pcard p-${t}${u?' usedc':''}" data-w="${i}" title="${PW[t][2]}" ${can?'':'disabled'}><i>${PW[t][0]}</i><b>${PW[t][1]}</b></button>`}).join('');
  const cl=((o&&o.pr)||[]).filter(c=>c!='-').map(c=>c[0]=='P'?`🔦 Spot <b>${+c.slice(1).split(':')[0]+1}</b> is <b>${c.split(':')[1]}</b>`:c=='M'?'🧬 You mutated one of their cards — old clues may be outdated':c=='L'?'🔒 A slot of their next guess is locked':c=='B'?'🛡️ Blocked by their shield!':'⚡ Their next turn is stolen').map(x=>`<span class="clue">${x}</span>`).join('');
  const up=used.filter(u=>u.t=='shield').length-m.pr.filter(c=>c=='B').length;
- const ev=[...(up>0?['🛡️ Your shield is up']:[]),...((o&&o.pu)||[]).map((u,j)=>m.pr[j]=='B'&&ATK.includes(u.t)?'🛡️ Your shield blocked a power-up!':u.t=='mutate'?'🧬 Opponent mutated one of your cards!':u.t=='lock'?'🔒 Opponent locked a slot on your guess':u.t=='steal'?'⚡ Opponent stole your turn!':null).filter(Boolean)].map(x=>`<span class="clue bad">${x}</span>`).join('');
+ const ev=[...(up>0?['🛡️ Your shield is up']:[]),...((o&&o.pu)||[]).map((u,j)=>m.pr[j]=='B'&&ATK.includes(u.t)?'🛡️ Your shield blocked a power-up!':u.t=='mutate'?'🧬 Opponent changed one of their cards — your old clues may be wrong!':u.t=='lock'?'🔒 Opponent locked a slot on your guess':u.t=='steal'?'⚡ Opponent stole your turn!':null).filter(Boolean)].map(x=>`<span class="clue bad">${x}</span>`).join('');
  const det=dockOpen?`<div class="dk-detail">${m.pw.map(t=>`<p><b>${PW[t][0]} ${PW[t][1]}:</b> ${PW[t][2]}</p>`).join('')}<p class="mu">Your hidden cards</p><div class="cards sm">${S.map((n,i)=>card(n,i==mutIdx?'flash':'')).join('')}</div><p class="mu">1 attack + 1 utility card per turn, on your turn.</p></div>`:'';
  return `${cl||ev?`<div class="clues">${cl}${ev}</div>`:''}<div class="dk-row">${bt}<button class="dkt" id="dkt">${dockOpen?'▼':'▲'}<small>Info</small></button></div>${det}`}
 const pwBox=()=>`<div class="dkspace"></div><div id="pw" class="dock">${pwH()}</div>`;
-function bindPw(){app.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{const i=+b.dataset.w,t=P[me].pw[i],key=H.rk+'/'+H.t+'/'+ATK.includes(t);if(sent.u==key)return;sent.u=key;const e={i,t,turn:H.t};if(t=='lock')e.slot=Math.random()*LV[H.lvl]|0;if(t=='freeze')addT(15);beep(1100,.12);cw(()=>pref(me).update({pu:[...P[me].pu,e]}))});
+function bindPw(){app.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{const i=+b.dataset.w,t=P[me].pw[i],key=H.rk+'/'+H.t+'/'+ATK.includes(t);if(sent.u==key)return;sent.u=key;const e={i,t,turn:H.t};if(t=='lock')e.slot=Math.random()*LV[H.lvl]|0;if(t=='freeze')addT(15);if(t=='mutate'){const ab=[0,1,2,3,4,5,6,7,8,9].filter(d=>!S.includes(d)),x=Math.random()*S.length|0;S[x]=pk(ab);mutIdx=x;dockOpen=true}beep(1100,.12);cw(()=>pref(me).update({pu:[...P[me].pu,e]}))});
  const d=$('#dkt');if(d)d.onclick=()=>{dockOpen=!dockOpen;refreshInfo()}}
 function refreshInfo(){const e=$('#pw');if(!e||!H||!P[me])return;e.innerHTML=pwH();bindPw()}
 function wait(msg,hist=false){show(`${hdr(false)}<div class="panel"><div class="spin">⏳</div><h2>${msg}</h2></div>${hist?`<h3>📝 Your guesses (${P[me].guesses.length})</h3><div class="hbox sm">${histH()}</div>${LEG}`:''}${hist?pwBox():''}`);if(hist)bindPw()}
@@ -192,7 +192,6 @@ function clientLogic(){const m=P[me],o=P[1-me];
   const shield=m.pu.filter(u=>u.t=='shield').length-m.pr.filter(c=>c=='B').length;
   if(ATK.includes(t)&&shield>0)r='B';
   else if(t=='xray'){const kn=m.pr.filter(c=>c[0]=='P').map(c=>+c.slice(1).split(':')[0]),ix=[...S.keys()].filter(x=>!kn.includes(x)),x=pk(ix.length?ix:[...S.keys()]);r='P'+x+':'+S[x]}
-  else if(t=='mutate'){const ab=[0,1,2,3,4,5,6,7,8,9].filter(d=>!S.includes(d)),x=Math.random()*S.length|0;S[x]=pk(ab);mutIdx=x;r='M'}
   else if(t=='lock')r='L';
   cw(()=>pref(me).update({pr:[...P[me].pr,r]}))}
  if(H.phase=='roundend'&&m.reveal==null&&sent.v!=H.rk){sent.v=H.rk;cw(()=>pref(me).update({reveal:S.join('')}))}}
