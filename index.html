@@ -57,6 +57,18 @@ input{background:#0006;color:#fff;border:2px solid #fff6;border-radius:12px;padd
 .clue.bad{background:#ff5d5d26;border-color:#ff5d5d99;display:inline-block}.own{margin-top:8px}
 .p-shield{--c1:#3a86ff;--c2:#1d3a8a}.p-freeze{--c1:#6ee7f9;--c2:#3b6fe0}
 @media(max-width:480px){.pcard{width:82px;height:128px;padding:4px}.pcard i{width:42px;height:42px;font-size:1.35rem}.pcard b{font-size:.75rem}.pcard small{font-size:.58rem}}
+
+.hbox{max-height:36vh;overflow-y:auto;padding-right:4px;-webkit-overflow-scrolling:touch}
+.dkspace{height:150px}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(14,16,40,.95);backdrop-filter:blur(10px);border-top:1px solid #ffffff2a;box-shadow:0 -6px 20px #0008}
+.dock>*{max-width:760px;margin-left:auto;margin-right:auto}
+.dk-row{display:flex;gap:6px;justify-content:center;align-items:center}
+.dock .pcard{width:74px;height:100px;border-width:3px;gap:2px;padding:3px}.dock .pcard i{width:36px;height:36px;font-size:1.2rem;box-shadow:inset 0 0 0 2px var(--c1)}
+.dock .pcard b{font-size:.58rem;letter-spacing:0}.dock .pcard small,.dock .pcard::after{display:none}.dock .pcard.usedc::before{font-size:.5rem;top:4px;left:50%}
+.dock .clues{max-height:56px;overflow-y:auto;margin:0 auto 6px}.dock .clue{font-size:.72rem;padding:2px 7px}
+.dkt{background:#ffffff26;color:#fff;border:0;border-radius:12px;padding:8px 10px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;height:100px;justify-content:center}.dkt small{font-weight:400;color:var(--mu)}
+.dk-detail{max-height:34vh;overflow-y:auto;margin-top:8px;text-align:left}.dk-detail p{margin:4px 0;font-size:.8rem}.dk-detail .cards{justify-content:flex-start}
+@media(max-width:480px){.dock .pcard{width:62px;height:88px}.dock .pcard i{width:30px;height:30px;font-size:1rem}.dkt{height:88px;padding:6px}}
 </style></head><body><div id="app"><h2>Connecting…</h2></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -64,7 +76,7 @@ input{background:#0006;color:#fff;border:2px solid #fff6;border-radius:12px;padd
 <script>
 const LV={Easy:4,Medium:6,Hard:8,Pro:9},RP=['🪨','📄','✂️'],$=s=>document.querySelector(s),app=$('#app');
 const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-let addT=()=>{},mutIdx=-1,db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:LS.get('gtn_name')||'',gt:0,at:0},q=Promise.resolve(),sent={};
+let dockOpen=false,addT=()=>{},mutIdx=-1,db,me=-1,code,gref,H=null,P=[null,null],S=[],lastKey='',tm,seen=0,hsig='',cfg={lvl:'Easy',rounds:3,name:LS.get('gtn_name')||'',gt:0,at:0},q=Promise.resolve(),sent={};
 const setName=v=>{cfg.name=v.trim();if(cfg.name)LS.set('gtn_name',cfg.name);return cfg.name||'Player'};
 const rp=()=>['digit','pos','elim'][Math.random()*3|0],pk=a=>a[Math.random()*a.length|0];
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=i=>esc(H.names[i]);
@@ -112,15 +124,17 @@ const PW={xray:['🔦','X-Ray','Reveal one of their cards'],mutate:['🧬','Muta
 function pwH(){const m=P[me],o=P[1-me];if(!m||!m.pw||!m.pw.length)return'';
  const used=m.pu||[],k=H.t>>1,base=H.phase=='play'&&cur()==me&&m.guesses.length<=k;
  const bt=m.pw.map((t,i)=>{const u=used.some(x=>x.i==i),can=base&&!u&&!used.some(x=>x.turn==H.t&&ATK.includes(x.t)==ATK.includes(t))&&(t!='freeze'||H.gt);
-  return `<button class="pcard p-${t}${u?' usedc':''}" data-w="${i}" ${can?'':'disabled'}><i>${PW[t][0]}</i><b>${PW[t][1]}</b><small>${t=='freeze'&&!H.gt?'(needs a time limit)':PW[t][2]}</small></button>`}).join('');
+  return `<button class="pcard p-${t}${u?' usedc':''}" data-w="${i}" title="${PW[t][2]}" ${can?'':'disabled'}><i>${PW[t][0]}</i><b>${PW[t][1]}</b></button>`}).join('');
  const cl=((o&&o.pr)||[]).filter(c=>c!='-').map(c=>c[0]=='P'?`🔦 Spot <b>${+c.slice(1).split(':')[0]+1}</b> is <b>${c.split(':')[1]}</b>`:c=='M'?'🧬 You mutated one of their cards — old clues may be outdated':c=='L'?'🔒 A slot of their next guess is locked':c=='B'?'🛡️ Blocked by their shield!':'⚡ Their next turn is stolen').map(x=>`<span class="clue">${x}</span>`).join('');
  const up=used.filter(u=>u.t=='shield').length-m.pr.filter(c=>c=='B').length;
  const ev=[...(up>0?['🛡️ Your shield is up']:[]),...((o&&o.pu)||[]).map((u,j)=>m.pr[j]=='B'&&ATK.includes(u.t)?'🛡️ Your shield blocked a power-up!':u.t=='mutate'?'🧬 Opponent mutated one of your cards!':u.t=='lock'?'🔒 Opponent locked a slot on your guess':u.t=='steal'?'⚡ Opponent stole your turn!':null).filter(Boolean)].map(x=>`<span class="clue bad">${x}</span>`).join('');
- return `<div class="panel pwp"><b>⚡ Power-ups</b> <span class="mu">(1 attack + 1 utility per turn, on your turn)</span><div class="row">${bt}</div>${cl?`<div class="clues">${cl}</div>`:''}${ev?`<div class="clues">${ev}</div>`:''}<div class="own"><span class="mu">Your hidden cards</span><div class="cards sm">${S.map((n,i)=>card(n,i==mutIdx?'flash':'')).join('')}</div></div></div>`}
-const pwBox=()=>`<div id="pw">${pwH()}</div>`;
-function bindPw(){app.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{const i=+b.dataset.w,t=P[me].pw[i],key=H.rk+'/'+H.t+'/'+ATK.includes(t);if(sent.u==key)return;sent.u=key;const e={i,t,turn:H.t};if(t=='lock')e.slot=Math.random()*LV[H.lvl]|0;if(t=='freeze')addT(15);beep(1100,.12);cw(()=>pref(me).update({pu:[...P[me].pu,e]}))})}
+ const det=dockOpen?`<div class="dk-detail">${m.pw.map(t=>`<p><b>${PW[t][0]} ${PW[t][1]}:</b> ${PW[t][2]}</p>`).join('')}<p class="mu">Your hidden cards</p><div class="cards sm">${S.map((n,i)=>card(n,i==mutIdx?'flash':'')).join('')}</div><p class="mu">1 attack + 1 utility card per turn, on your turn.</p></div>`:'';
+ return `${cl||ev?`<div class="clues">${cl}${ev}</div>`:''}<div class="dk-row">${bt}<button class="dkt" id="dkt">${dockOpen?'▼':'▲'}<small>Info</small></button></div>${det}`}
+const pwBox=()=>`<div class="dkspace"></div><div id="pw" class="dock">${pwH()}</div>`;
+function bindPw(){app.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{const i=+b.dataset.w,t=P[me].pw[i],key=H.rk+'/'+H.t+'/'+ATK.includes(t);if(sent.u==key)return;sent.u=key;const e={i,t,turn:H.t};if(t=='lock')e.slot=Math.random()*LV[H.lvl]|0;if(t=='freeze')addT(15);beep(1100,.12);cw(()=>pref(me).update({pu:[...P[me].pu,e]}))});
+ const d=$('#dkt');if(d)d.onclick=()=>{dockOpen=!dockOpen;refreshInfo()}}
 function refreshInfo(){const e=$('#pw');if(!e||!H||!P[me])return;e.innerHTML=pwH();bindPw()}
-function wait(msg,hist=false){show(`${hdr(false)}<div class="panel"><div class="spin">⏳</div><h2>${msg}</h2></div>${hist?`<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>${LEG}`:''}${hist?pwBox():''}`);if(hist)bindPw()}
+function wait(msg,hist=false){show(`${hdr(false)}<div class="panel"><div class="spin">⏳</div><h2>${msg}</h2></div>${hist?`<h3>📝 Your guesses (${P[me].guesses.length})</h3><div class="hbox sm">${histH()}</div>${LEG}`:''}${hist?pwBox():''}`);if(hist)bindPw()}
 function lobby(){show(`<h1 class="glow">Waiting for opponent…</h1><div class="panel"><p>On your friend’s device open this same page, tap <b>Join a game</b> and enter this PIN:</p><div class="code">${code}</div><p class="mu">${H.lvl} • ${LV[H.lvl]} numbers • ${H.rounds} round${H.rounds>1?'s':''}</p><p class="mu">Guess time: ${H.gt?H.gt+'s':'no limit'} • Arrange time: ${H.at?H.at+'s':'no limit'}</p><div class="spin">⏳</div></div>`)}
 function arr(){let sel=-1;show(`${hdr(true)}<h2>🔀 Arrange your numbers</h2><p class="mu">Tap two cards to swap. Your opponent has to guess this order!</p><div id="cards" class="cards"></div><button class="btn go" id="ok">✔ Lock it in</button>`);
  const draw=()=>{$('#cards').innerHTML=S.map((n,i)=>`<span data-i="${i}" class="${i==sel?'sel':''}">${card(n)}</span>`).join('')};draw();
@@ -135,7 +149,7 @@ function play(){const n=LV[H.lvl],p=cur(),k=H.t>>1,m=P[me],o=P[1-me];
  if(hit('steal'))return wait('⚡ Your turn was stolen!',true);
  const lk=hit('lock'),ls=lk?lk.slot%n:-1,g=Array(n).fill(null);if(ls>=0)g[ls]='L';
  beep(990,.15);
- show(`${hdr(true)}<h2>🎯 Your turn${H.t==0?' — you go first!':''}</h2>${ls>=0?`<p class="clue bad">🔒 Slot ${ls+1} is locked this turn!</p>`:''}<div id="slots" class="cards"></div><div id="pool" class="pool cards"></div><button class="btn go" id="sub" disabled>Guess!</button>${pwBox()}${LEG}<h3>📝 Your guesses</h3><div class="sm">${histH()}</div>`);
+ show(`${hdr(true)}<h2>🎯 Your turn${H.t==0?' — you go first!':''}</h2>${ls>=0?`<p class="clue bad">🔒 Slot ${ls+1} is locked this turn!</p>`:''}<div id="slots" class="cards"></div><div id="pool" class="pool cards"></div><button class="btn go" id="sub" disabled>Guess!</button><h3>📝 Your guesses (${m.guesses.length})</h3><div class="hbox sm">${histH()}</div>${LEG}${pwBox()}`);
  bindPw();
  const draw=()=>{$('#slots').innerHTML=g.map((x,i)=>x=='L'?'<div class="card locked"><b>🔒</b></div>':x!=null?`<span data-s="${i}">${card(x)}</span>`:'<div class="card empty"><b>?</b></div>').join('');
   $('#pool').innerHTML=[...Array(10)].map((_,i)=>`<span data-p="${i}" class="${g.includes(i)?'used':''}">${card(i)}</span>`).join('');$('#sub').disabled=g.includes(null)};draw();
